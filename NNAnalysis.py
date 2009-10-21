@@ -180,7 +180,7 @@ os.makedirs(resultLoc + "/ZRBest")
 
 
 
-selected = decimate2d_ZR(dataSet[:, reflectIndex], dataSet[:, rrIndex], truncVal)
+selected = f.decimate2d(dataSet[:, reflectIndex], dataSet[:, rrIndex], truncVal)
 truncData = dataSet[selected, :]
 numpy.savetxt(resultLoc + '/fullSet_trunc.csv', truncData, fmt='%6.4f', delimiter=',')
 

@@ -28,19 +28,19 @@ def ZRBest(trainData) :
 
 
 
-#def decimate2d_ZR(vals1, vals2, decimation):
-#    def Gaussian(vals, means, stds) :
-#        return(numpy.exp(-((vals - means)**2.0)/(2 * (stds**2.0))) / (numpy.sqrt(2.0 * 3.14) * stds))
-#    bins1 = MakeBins(vals1, OptimalBinSize(vals1))
-#    bins2 = MakeBins(vals2, OptimalBinSize(vals2))
-#    (n, binLocs) = Hist2d(vals1, bins1, vals2, bins2)
-#    [bin1mesh, bin2mesh] = numpy.meshgrid(bins1[0:-1], bins2[0:-1])
-#    weights = Gaussian(bin1mesh, 10.0 * numpy.log10(300.0*bin2mesh**1.4), 6.0) + Gaussian(bin2mesh, ZRModel([300, 1.4], bin1mesh), 6.0)
-#    binCnt = len(numpy.nonzero(n)[0])
-#    baseThresholds = numpy.array([len(binLocs) * decimation / (binCnt * n[aCoord]) for aCoord in binLocs])
-#    scale = baseThresholds.max()/weights.max()
-#    thresholds = baseThresholds * numpy.array([scale * weights[aCoord] for aCoord in binLocs])
-#    return(numpy.random.random_sample(len(thresholds)) <= thresholds)
+def decimate2d_ZR(vals1, vals2, decimation):
+    def Gaussian(vals, means, stds) :
+        return(numpy.exp(-((vals - means)**2.0)/(2 * (stds**2.0))) / (numpy.sqrt(2.0 * 3.14) * stds))
+    bins1 = MakeBins(vals1, OptimalBinSize(vals1))
+    bins2 = MakeBins(vals2, OptimalBinSize(vals2))
+    (n, binLocs) = Hist2d(vals1, bins1, vals2, bins2)
+    [bin1mesh, bin2mesh] = numpy.meshgrid(bins1[0:-1], bins2[0:-1])
+    weights = Gaussian(bin1mesh, 10.0 * numpy.log10(300.0*bin2mesh**1.4), 6.0) + Gaussian(bin2mesh, ZRModel([300, 1.4], bin1mesh), 6.0)
+    binCnt = len(numpy.nonzero(n)[0])
+    baseThresholds = numpy.array([len(binLocs) * decimation / (binCnt * n[aCoord]) for aCoord in binLocs])
+    scale = baseThresholds.max()/weights.max()
+    thresholds = baseThresholds * numpy.array([scale * weights[aCoord] for aCoord in binLocs])
+    return(numpy.random.random_sample(len(thresholds)) <= thresholds)
 
 
 ############################## Plotting #########################################
@@ -167,15 +167,17 @@ def ObtainResultInfo(dirLoc, subProj) :
             'reflectObs': numpy.array([aRow[:, 2] for aRow in tempy])})
 
 
-def SaveSubprojectModel(dirLoc, subProj) :
+def SaveSubprojectModel(resultInfo, dirLoc, subProj) :
+    """
     resultsList = glob.glob(os.sep.join([dirLoc, subProj, 'results_*.csv']))
     resultsList.sort()
-
+    """
     summaryInfo = {'rmse': [],
 		   'mae': [],
 		   'corr': [],
 		   'sse': [],
 		   'sae': []}
+    """
     skipMap = {'FullSet': 13,
 	       'SansWind': 11,
 	       'JustWind': 10,
@@ -192,7 +194,7 @@ def SaveSubprojectModel(dirLoc, subProj) :
 	summaryInfo['corr'].append(numpy.diag(numpy.corrcoef(tempy[:, 0], tempy[:, 1]), k=tempy[:, 0].shape[0]))
 	summaryInfo['sse'].append(numpy.sum((tempy[:, 0] - tempy[:, 1]) ** 2.0))
 	summaryInfo['sae'].append(numpy.sum(numpy.abs(tempy[:, 0] - tempy[:, 1])))
-
+    """
 
 #    PlotCorr(resultInfo['testObs'], resultInfo['modelPredicts'])
 #    pylab.title('Model/Obs Correlation Plot - Model: ' + subProj)
@@ -206,7 +208,7 @@ def SaveSubprojectModel(dirLoc, subProj) :
 #    pylab.clf()
 #    print "   Save ZR Plot..."
 
-#    summaryInfo = DoSummaryInfo(resultInfo['testObs'], resultInfo['modelPredicts'])
+    summaryInfo = DoSummaryInfo(resultInfo['testObs'], resultInfo['modelPredicts'])
     statNames = summaryInfo.keys()
     for statname in statNames :
         numpy.savetxt(os.sep.join([dirLoc, "summary_%s_%s.txt" % (statname, subProj)]), summaryInfo[statname])

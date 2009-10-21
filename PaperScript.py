@@ -24,19 +24,29 @@ def ZRBest(trainData) :
 
     return(optimize.fmin(errFun, [300, 1.4], maxiter=2000, disp=0))
 
+def RZModel(coefs, rainRates) :
+    return(10.0 * numpy.log10(coefs[0] * ((rainRates + 0.001) ** coefs[1])))
+
+def RZBest(trainData) :
+    def errFun(coefs) :
+        return(numpy.sqrt(numpy.mean((RZModel(coefs, trainData[:, 1]) - trainData[:, 0])**2.0)))
+
+    return(optimize.fmin(errFun, [300, 1.4], maxiter=2000, disp=0))
+
 
 ############################## Plotting #########################################
 def PlotCorr(obs, estimated, **kwargs) :
-    pylab.scatter(obs.flatten(), estimated.flatten(), s=1, **kwargs)
-    pylab.plot([0.0, obs.max()], [0.0, obs.max()], color='c', hold=True)
+    pylab.plot([0.0, obs.max()], [0.0, obs.max()], color='gray', linewidth=2.5)
+    pylab.scatter(obs.flatten(), estimated.flatten(), s=1.5, linewidths=0, c='black', alpha=0.75, hold=True, **kwargs)
     pylab.xlabel('Observed Rainfall Rate [mm/hr]')
     pylab.ylabel('Estimated Rainfall Rate [mm/hr]')
     pylab.xlim((0.0, obs.max()))
     pylab.ylim((0.0, obs.max()))
 
 def PlotZR(reflects, obs, estimated, **kwargs) :
-    pylab.scatter(reflects.flatten(), obs.flatten(), color='r', s = 1)
-    pylab.scatter(reflects.flatten(), estimated.flatten(), color='b', s = 1, hold = True, **kwargs)
+    pylab.scatter(reflects.flatten(), obs.flatten(), s = 3.0, linewidths=0, c='red')
+    pylab.scatter(reflects.flatten(), estimated.flatten(), s = 0.3, linewidths=0, c='blue', hold = True, **kwargs)
+
     pylab.xlabel('Reflectivity [dBZ]')
     pylab.ylabel('Rainfall Rate [mm/hr]')
     pylab.xlim((reflects.min(), reflects.max()))
@@ -151,32 +161,34 @@ if __name__ == '__main__':
    resultInfo['FullSet'] = ObtainResultInfo(projectName, 'FullSet')
    resultInfo['ZRBest'] = ObtainResultInfo(projectName, 'ZRBest')
 
-   pylab.figure(figsize = (12.0, 6.0))
-   pylab.subplot(121)
+   pylab.figure(figsize = (13.0, 6.0))
+   pylab.subplot(122)
 
    PlotCorr(resultInfo['ZRBest']['testObs'], resultInfo['ZRBest']['modelPredicts'])
-   pylab.title('Model/Obs Correlation Plot - Model: ZRBest', fontsize = 14)
+   pylab.title('Model/Obs Correlation Plot - Model: ZRBest', fontsize = 13)
 
-   pylab.subplot(122)
+   pylab.subplot(121)
    PlotCorr(resultInfo['FullSet']['testObs'], resultInfo['FullSet']['modelPredicts'])
-   pylab.title('Model/Obs Correlation Plot - Model: FullSet', fontsize = 14)
+   pylab.title('Model/Obs Correlation Plot - Model: FullSet', fontsize = 13)
 
-   pylab.savefig(projectName + os.sep + "CorrModels.eps")
-   pylab.savefig(projectName + os.sep + "CorrModels.png", dpi = 300)
+   pylab.savefig("CorrModels_Raw.eps")
+   pylab.savefig("CorrModels_Raw.png", dpi = 400)
    pylab.clf()
 
-   pylab.figure(figsize = (12.0, 6.0))
-   pylab.subplot(121)
+   pylab.figure(figsize = (13.0, 6.0))
+   pylab.subplot(122)
 
    PlotZR(resultInfo['ZRBest']['reflectObs'], resultInfo['ZRBest']['testObs'], resultInfo['ZRBest']['modelPredicts'])
-   pylab.title('Model Comparison - Z-R Plane - Model: ZRBest', fontsize = 14)
+#   pylab.legend(('Observed', 'ZRBest'), loc='upper left', scatterpoints = 10)
+   pylab.title('Model Comparison - Z-R Plane - Model: ZRBest', fontsize = 13)
 
-   pylab.subplot(122)
+   pylab.subplot(121)
    PlotZR(resultInfo['FullSet']['reflectObs'], resultInfo['FullSet']['testObs'], resultInfo['FullSet']['modelPredicts'])
-   pylab.title('Model Comparison - Z-R Plane - Model: FullSet', fontsize = 14)
+#   pylab.legend(('Observed', 'FullSet'), loc='upper left', scatterpoints = 10)
+   pylab.title('Model Comparison - Z-R Plane - Model: FullSet', fontsize = 13)
 
-   pylab.savefig(projectName + os.sep + "ZRPlot_Models.eps")
-   pylab.savefig(projectName + os.sep + "ZRPlot_Models.png", dpi = 300)
+   pylab.savefig("ZRPlot_Models_Raw.eps")
+   pylab.savefig("ZRPlot_Models_Raw.png", dpi = 400)
 
     
 
