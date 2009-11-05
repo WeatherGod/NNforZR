@@ -19,16 +19,10 @@ def MakeARFFHeader(varList, filename) :
     arffStream.write("\n\n@data\n")
     arffStream.close()
 
-def PerformTestTrain_zr(dataSet, iterCnt, dirLoc) :
-    dataLen = dataSet.shape[0]
-    trainLen = numpy.floor(dataLen * 0.6666)
-
-    fileNames = {'training': [], 'testing': [], 'model': [], 'results': []}
+def PerformTestTrain_zr(iterCnt, dirLoc) :
+    
     for iterIndex in range(iterCnt) :
         print "%d of %d iterations" % (iterIndex + 1, iterCnt)
-
-        trainSelected = random.sample(range(dataLen), trainLen)
-        testSelected = numpy.setxor1d(trainSelected, range(dataLen))
 
         trainStem = "%s/trainingData_%dof%d" % (dirLoc, iterIndex + 1, iterCnt)
         testStem = "%s/testingData_%dof%d" % (dirLoc, iterIndex + 1, iterCnt)
@@ -36,26 +30,20 @@ def PerformTestTrain_zr(dataSet, iterCnt, dirLoc) :
         modelStem = "%s/model_%dof%d" % (dirLoc, iterIndex + 1, iterCnt)
         resultsStem = "%s/results_%dof%d" % (dirLoc, iterIndex + 1, iterCnt)
 
-        fileNames['training'].append(trainStem + '.csv')
-        numpy.savetxt(trainStem + '.csv', dataSet[trainSelected, :], fmt="%6.4f", delimiter=',')
+        
+        trainData = numpy.loadtxt(trainStem + '.csv', delimiter=',')
+        testData = numpy.loadtxt(testStem + '.csv', delimiter=',')
 
-        fileNames['testing'].append(testStem + '.csv')
-        numpy.savetxt(testStem + '.csv', dataSet[testSelected, :], fmt="%6.4f", delimiter=',')
 
-        trainData = dataSet[trainSelected, :]
-        testData = dataSet[testSelected, :]
-
-        finalCoefs = ZRBest(trainData)
 
         # Perform the model training, saving the resulting model
         # I also want the model coefficient info.
-        fileNames['model'].append(modelStem + '.txt')
+        finalCoefs = ZRBest(trainData)
         numpy.savetxt(modelStem + '.txt', finalCoefs)
 
         # Perform a test of the model using the available test
         # data.  The results are output to a file for loading
         # back into python for analysis
-        fileNames['results'].append(resultsStem + '.csv')
         modelPredicts = ZRModel(finalCoefs, numpy.squeeze(testData[:, 0]))
         wholeSet = numpy.append(testData, 
 				modelPredicts.reshape((modelPredicts.shape[0], 1)),
@@ -63,27 +51,48 @@ def PerformTestTrain_zr(dataSet, iterCnt, dirLoc) :
         #print(modelPredicts.shape, testData.shape, wholeSet.shape)
         numpy.savetxt(resultsStem + '.csv', wholeSet, delimiter=',')
 
-    return(fileNames)
 
-
-
-def PerformTestTrain(dataSet, iterCnt, dirLoc) :
+def PrepForTestTrain(dataSet, iterCnt, dirLoc, varNames, varIndxs) :
     dataLen = dataSet.shape[0]
     trainLen = numpy.floor(dataLen * 0.6666)
 
-    arffHeader = dirLoc + '/arffHeader.txt'
-    
-    mlpTrainCall = "java -Xmx128m weka.classifiers.functions.MultilayerPerceptron -L 0.05 -M 0.3 -N 3000 -H '4,2' -t %s -no-cv -v -d %s > %s"
-    mlpTestCall = "java -Xmx128m weka.filters.supervised.attribute.AddClassification -serialized %s -classification -i %s -o %s -c last"
+    for subProj in varIndxs.keys() :
+	MakeARFFHeader(varNames[varIndxs[subProj]], dirLoc + '/' + subProj + '/arffHeader.txt')
 
-    fileNames = {'training': [], 'testing': [], 'model': [], 'results': []}
     for iterIndex in range(iterCnt) :
         print "%d of %d iterations" % (iterIndex + 1, iterCnt)
 
         # Save a random sample of the data for training, and the rest for testing
-	trainSelected = random.sample(range(dataLen), trainLen)
+        trainSelected = random.sample(range(dataLen), trainLen)
         testSelected = numpy.setxor1d(trainSelected, range(dataLen))
 
+	trainData = dataSet[trainSelected, :]
+	testData = dataSet[testSelected, :]
+
+        for subProj in varIndxs.keys() :
+            arffHeader = "%s/%s/arffHeader.txt" % (dirLoc, subProj)
+            trainStem = "%s/%s/trainingData_%dof%d" % (dirLoc, subProj, iterIndex + 1, iterCnt)
+            testStem = "%s/%s/testingData_%dof%d" % (dirLoc, subProj, iterIndex + 1, iterCnt)
+
+            numpy.savetxt(trainStem + '.csv', trainData[:, varIndxs[subProj]], fmt="%6.4f", delimiter=',')
+            os.system('cat %s %s > %s' % (arffHeader, trainStem + '.csv', trainStem + '.arff'))
+
+
+            numpy.savetxt(testStem + '.csv', testData[:, varIndxs[subProj]], fmt="%6.4f", delimiter=',')
+            os.system('cat %s %s > %s' % (arffHeader, testStem + '.csv', testStem + '.arff'))
+
+
+
+
+def PerformTestTrain(iterCnt, dirLoc) :
+    
+    mlpTrainCall = "java -Xmx128m weka.classifiers.functions.MultilayerPerceptron -L 0.05 -M 0.3 -N 3000 -H '4,2' -t %s -no-cv -v -d %s > %s"
+    mlpTestCall = "java -Xmx128m weka.filters.supervised.attribute.AddClassification -serialized %s -classification -i %s -o %s -c last"
+
+    print "Working on ", dirLoc
+
+    for iterIndex in range(iterCnt) :
+        print "%d of %d iterations" % (iterIndex + 1, iterCnt)
 
 	trainStem = "%s/trainingData_%dof%d" % (dirLoc, iterIndex + 1, iterCnt)
 	testStem = "%s/testingData_%dof%d" % (dirLoc, iterIndex + 1, iterCnt)
@@ -92,27 +101,14 @@ def PerformTestTrain(dataSet, iterCnt, dirLoc) :
 	resultsStem = "%s/results_%dof%d" % (dirLoc, iterIndex + 1, iterCnt)
 
 
-        fileNames['training'].append(trainStem + '.csv')
-        numpy.savetxt(trainStem + '.csv', dataSet[trainSelected, :], fmt="%6.4f", delimiter=',')
-	os.system('cat %s %s > %s' % (arffHeader, trainStem + '.csv', trainStem + '.arff'))
-	
-	fileNames['testing'].append(testStem + '.csv')
-	numpy.savetxt(testStem + '.csv', dataSet[testSelected, :], fmt="%6.4f", delimiter=',')
-	os.system('cat %s %s > %s' % (arffHeader, testStem + '.csv', testStem + '.arff'))
-
         # Perform the model training, saving the resulting model
         # I also want the model coefficient info.
-        fileNames['model'].append(modelStem + '.txt')
         os.system(mlpTrainCall % (trainStem + '.arff', modelStem + '.model', modelStem + '.txt'))
 
         # Perform a test of the model using the available test
         # data.  The results are output to a file for loading
         # back into python for analysis
-        fileNames['results'].append(resultsStem + '.csv')
         os.system(mlpTestCall % (modelStem + '.model', testStem + '.arff', resultsStem + '.csv'))
-
-    return(fileNames)
-
 
 
 varNames = numpy.array(['temperature', 'relHumidity', 'pressure', 
@@ -170,14 +166,7 @@ print "There will be %d iterations to perform." % (resultCnt)
 dataSet = numpy.loadtxt(dataFile, delimiter=',')
 
 
-
-os.makedirs(resultLoc + '/FullSet')
-os.makedirs(resultLoc + "/SansWind")
-os.makedirs(resultLoc + "/JustWind")
-os.makedirs(resultLoc + "/Reflect")
-#os.makedirs(resultLoc + "/Shuffled")
-os.makedirs(resultLoc + "/ZRBest")
-
+os.makedirs(resultLoc)
 
 
 selected = f.decimate2d(dataSet[:, reflectIndex], dataSet[:, rrIndex], truncVal)
@@ -187,28 +176,45 @@ numpy.savetxt(resultLoc + '/fullSet_trunc.csv', truncData, fmt='%6.4f', delimite
 filenames = {}
 ############################################################
 
-# performing zr best fits
 
-reflectOnly = numpy.array([reflectIndex, rrIndex])
+
+varIndxs = {}
+
+os.makedirs(resultLoc + '/FullSet')
+varIndxs['FullSet'] = numpy.array([tempIndex, rhIndex, pressIndex, uwndIndex, vwndIndex, reflectIndex, rrIndex])
+
+os.makedirs(resultLoc + "/SansWind")
+varIndxs['SansWind'] = numpy.array([tempIndex, rhIndex, pressIndex, reflectIndex, rrIndex])
+os.makedirs(resultLoc + "/JustWind")
+varIndxs['JustWind'] = numpy.array([uwndIndex, vwndIndex, reflectIndex, rrIndex])
+os.makedirs(resultLoc + "/Reflect")
+varIndxs['Reflect'] = numpy.array([reflectIndex, rrIndex])
+
+#os.makedirs(resultLoc + "/Shuffled")
+#varIndxs['Shuffled'] = numpy.array([tempIndex, rhIndex, pressIndex, uwndIndex, vwndIndex, reflectIndex, rrIndex])
+
+os.makedirs(resultLoc + "/ZRBest")
+varIndxs['ZRBest'] = numpy.array([reflectIndex, rrIndex])
+
+PrepForTestTrain(truncData, resultCnt, resultLoc, varNames, varIndxs)
+
+
+# performing zr best fits
 dirLoc = resultLoc + '/ZRBest/'
-filenames['ZRBest'] = PerformTestTrain_zr(truncData[:, reflectOnly], resultCnt, dirLoc)
-tempy = [numpy.loadtxt(aFileName, delimiter=',') for aFileName in filenames['ZRBest']['results']]
-resultInfo = {'modelPredicts': numpy.array([aRow[:, 2] for aRow in tempy]),
-              'testObs': numpy.array([aRow[:, 1] for aRow in tempy]),
-              'reflectObs': numpy.array([aRow[:, 0] for aRow in tempy])}
+PerformTestTrain_zr(resultCnt, dirLoc)
+resultInfo = ObtainResultInfo(resultLoc, 'ZRBest')
 SaveSubprojectModel(resultInfo, resultLoc, 'ZRBest')
 
 
 resultInfo['modelPredicts'] = ZRModel([300, 1.4], resultInfo['reflectObs'])
-SaveSubprojectModel(resultInfo, resultLoc, "NWSZR")
+SaveSubprojectModel(resultInfo, resultLoc, 'NWSZR')
 
 
-allVars = [tempIndex, rhIndex, pressIndex, uwndIndex, vwndIndex, reflectIndex, rrIndex]
+
 
 # full set of data
 dirLoc = resultLoc + '/FullSet/'
-MakeARFFHeader(varNames, dirLoc + '/arffHeader.txt')
-filenames['FullSet'] = PerformTestTrain(truncData, resultCnt, dirLoc)
+PerformTestTrain(resultCnt, dirLoc)
 resultInfo = ObtainResultInfo(resultLoc, 'FullSet')
 SaveSubprojectModel(resultInfo, resultLoc, 'FullSet')
 
@@ -227,25 +233,20 @@ SaveSubprojectModel(resultInfo, resultLoc, 'FullSet')
 
 
 # data without wind
-sansWind = numpy.array([tempIndex, rhIndex, pressIndex, reflectIndex, rrIndex])
 dirLoc = resultLoc + '/SansWind/'
-MakeARFFHeader(varNames[sansWind], dirLoc + '/arffHeader.txt')
-filenames['SansWind'] = PerformTestTrain(truncData[:, sansWind], resultCnt, dirLoc)
+PerformTestTrain(resultCnt, dirLoc)
 resultInfo = ObtainResultInfo(resultLoc, 'SansWind')
 SaveSubprojectModel(resultInfo, resultLoc, 'SansWind')
 
 # data with just wind and reflectivity
-justWind = numpy.array([uwndIndex, vwndIndex, reflectIndex, rrIndex])
 dirLoc = resultLoc + '/JustWind/'
-MakeARFFHeader(varNames[justWind], dirLoc + '/arffHeader.txt')
-filenames['JustWind'] = PerformTestTrain(truncData[:, justWind], resultCnt, dirLoc)
+PerformTestTrain(resultCnt, dirLoc)
 resultInfo = ObtainResultInfo(resultLoc, 'JustWind')
 SaveSubprojectModel(resultInfo, resultLoc, 'JustWind')
 
 # data without surface info
 dirLoc = resultLoc + '/Reflect/'
-MakeARFFHeader(varNames[reflectOnly], dirLoc + '/arffHeader.txt')
-filenames['Reflect'] = PerformTestTrain(truncData[:, reflectOnly], resultCnt, dirLoc)
+PerformTestTrain(resultCnt, dirLoc)
 resultInfo = ObtainResultInfo(resultLoc, 'Reflect')
 SaveSubprojectModel(resultInfo, resultLoc, 'Reflect')
 

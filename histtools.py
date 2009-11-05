@@ -33,18 +33,29 @@ def MakeBins(vals, binSize) :
     return(tempHold)
 
 def Hist2d(vals1, bins1, vals2, bins2) :
+    
     lims1 = [bins1[0:(len(bins1) - 1)], bins1[1:len(bins1)]]
     lims1[1][-1] += 100 *numpy.finfo(float).eps
 
     lims2 = [bins2[0:(len(bins2) - 1)], bins2[1:len(bins2)]]
     lims2[1][-1] += 100 *numpy.finfo(float).eps
 
+
+    # Returns a two column vector with the index location (j, i) for each value.
     binLocs = zip([numpy.nonzero(numpy.logical_and(lims2[0] <= val, lims2[1] > val))[0][0] for val in vals2],
                   [numpy.nonzero(numpy.logical_and(lims1[0] <= val, lims1[1] > val))[0][0] for val in vals1])
 
     n_2d = numpy.zeros((len(lims2[0]), len(lims1[0])))
 
     for aCoord in binLocs : n_2d[aCoord] += 1
+    
+    """
+    (n_2d, edges1, edges2) = numpy.histogram2d(vals1, vals2, bins=[bins1, bins2])
+    
+    # Returns a two column vector with the index location (j, i) for each value.
+    binLocs = zip([numpy.nonzero(numpy.logical_and(edges2[0] <= val, edges2[1] > val))[0][0] for val in vals2],
+                  [numpy.nonzero(numpy.logical_and(edges1[0] <= val, edges1[1] > val))[0][0] for val in vals1])
 
+    """
     return(n_2d, binLocs)
 

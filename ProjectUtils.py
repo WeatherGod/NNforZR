@@ -1,8 +1,6 @@
 #!/usr/bin/env python
 
 
-from optparse import OptionParser	# Command-line parsing
-
 import glob			# for filename globbing
 import os
 import numpy
@@ -12,23 +10,12 @@ import pylab			# for plotting
 
 from filtertraining import *	# for MakeBins(), Hist2d()
 
-from scipy import optimize
-#from arff import arffread
-
-def ZRModel(coefs, reflects) :
-    return(((10.0 **(reflects/10.0))/coefs[0]) ** (1/coefs[1]))
-
-def ZRBest(trainData) :
-    def errFun(coefs) :
-        return(numpy.sqrt(numpy.mean((ZRModel(coefs, trainData[:, 0]) - trainData[:, 1])**2.0)))
-
-    return(optimize.fmin(errFun, [300, 1.4], maxiter=2000, disp=0))
-
-
-
 
 
 def decimate2d_ZR(vals1, vals2, decimation):
+    """
+    Don't use this.  It is experimental, and really a poor idea!
+    """
     def Gaussian(vals, means, stds) :
         return(numpy.exp(-((vals - means)**2.0)/(2 * (stds**2.0))) / (numpy.sqrt(2.0 * 3.14) * stds))
     bins1 = MakeBins(vals1, OptimalBinSize(vals1))
@@ -62,24 +49,6 @@ def PlotZR(reflects, obs, estimated, **kwargs) :
 
 ####################################################################################
 
-def ObtainModelInfo(dirLoc, subProj) :
-    modelList = glob.glob(os.sep.join([dirLoc, subProj, 'model_*.txt']))
-    modelCoefs = [ProcessModelInfo(filename) for filename in modelList]
-
-    coefNames = modelCoefs[0].keys()
-    coefNames.sort()
-
-    vals = []
-    for weight in modelCoefs :
-        vals.append([weight[coef] for coef in coefNames])
-
-    return((coefNames, numpy.array(vals)))
-
-
-
-#    print len(tempy), type(tempy[0])
-
-
 def AnalyzeResultInfo(modelPredicts, testObs, reflectObs) :
     print "FULL SET"
     sumInfo = DoSummaryInfo(testObs, modelPredicts)
@@ -112,41 +81,12 @@ def AnalyzeResultInfo(modelPredicts, testObs, reflectObs) :
 def DoSummaryInfo(obs, estimated) :
     return({'rmse': numpy.sqrt(sss.nanmean((estimated - obs) ** 2.0, axis = 1)),
             'mae': sss.nanmean(numpy.abs(estimated - obs), axis=1),
-	    'corr': numpy.diag(numpy.corrcoef(estimated, obs), k=estimated.shape[0]),
-	    'sse': numpy.sum((estimated - obs) ** 2.0, axis = 1)})
+	    'corr': numpy.diag(numpy.corrcoef(estimated, obs), k=estimated.shape[0])})
 
 
 
-def ProcessModelInfo(filename) :
-    weights = {}
-    nodeName = None
 
-    for line in open(filename) :
-        line = line.strip()
-        if (line.startswith('Linear Node') or line.startswith('Sigmoid Node')) :
-	    nodeName = line.split(' ')[-1].strip()
-        elif  (line.startswith('Threshold') 
-		 or line.startswith('Node')
-		 or line.startswith('Attrib')) :
-            weights["%s-%s" % (nodeName, line.split()[-2])] = float(line.split()[-1])
 
-    return(weights)
-
-#def ObtainClassifications(filename) :
-#    f = open(filename)
-#    (name, sparse, alist, m) = arffread(f)
-#    f.close()
-#
-#    return(numpy.array([aRow[-1] for aRow in m]))
-
-def ObtainARFFData(filename, columnIndxs, linesToSkip) :
-#    f = open(filename)
-#    (name, sparse, alist, m) = arffread(f)
-#    f.close()
-#
-#    return(numpy.array(m)[:, columnIndxs])
-    return(numpy.loadtxt(filename, delimiter=',', skiprows=linesToSkip)[:, columnIndxs])
-    
 
 def ObtainResultInfo(dirLoc, subProj) :
     resultsList = glob.glob(os.sep.join([dirLoc, subProj, 'results_*.csv']))
@@ -161,14 +101,11 @@ def ObtainResultInfo(dirLoc, subProj) :
 	       'NWSZR': 0}
 
 
-    tempy = [ObtainARFFData(filename, numpy.array([-1, -2, -3]), skipMap[subProj]) for filename in resultsList]
+    tempy = [numpy.loadtxt(filename, delimiter=',', 
+			   skiprows=skipMap[subProj])[:, numpy.array([-1, -2, -3])] for filename in resultsList]
     return({'modelPredicts': numpy.array([aRow[:, 0] for aRow in tempy]),
             'testObs': numpy.array([aRow[:, 1] for aRow in tempy]),
             'reflectObs': numpy.array([aRow[:, 2] for aRow in tempy])})
-
-def CalcErrorImprovement(resultInfo1, resultInfo2) :
-    return(numpy.abs(resultInfo2['modelPredicts'] - resultInfo2['testObs']) 
-	   - numpy.abs(resultInfo1['modelPredicts'] - resultInfo1['testObs']))
 
 
 def SaveSubprojectModel(resultInfo, dirLoc, subProj) :
@@ -178,9 +115,7 @@ def SaveSubprojectModel(resultInfo, dirLoc, subProj) :
     """
     summaryInfo = {'rmse': [],
 		   'mae': [],
-		   'corr': [],
-		   'sse': [],
-		   'sae': []}
+		   'corr': []}
     """
     skipMap = {'FullSet': 13,
 	       'SansWind': 11,
@@ -219,32 +154,4 @@ def SaveSubprojectModel(resultInfo, dirLoc, subProj) :
         print "        Saved summary data for", statname
 
 
-
-# Run this code if this script is executed like a program
-# instead of being loaded like a library file.
-if __name__ == '__main__':
-    parser = OptionParser()
-
-    parser.add_option("-d", "--dir", dest="projLoc",
-                      help="Project located at DIR", metavar="DIR")
-
-    (options, args) = parser.parse_args()
-
-    if (options.projLoc == None) :
-        parser.error("Missing DIR")
-
-    dirLoc = options.projLoc
-    print "The project is at:", dirLoc
-
-    (pathName, dirNames, filenames) = os.walk(dirLoc).next()
-
-    for subProj in dirNames :
-        print "Subproject:", subProj
-        SaveSubprojectModel(dirLoc, subProj)
-
-#    print "Subproject: NWS ZR"
-#    resultInfo_nws = ObtainResultInfo(dirLoc, "Reflect")
-#    resultInfo_nws['modelPredicts'] = ZRModel([300, 1.4], resultInfo_nws['reflectObs'])
-#    SaveSubprojectModel(resultInfo_nws, dirLoc, "nwszr")
-    
 

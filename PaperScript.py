@@ -12,6 +12,8 @@ import pylab			# for plotting
 
 from filtertraining import *	# for MakeBins(), Hist2d()
 
+import matplotlib		# for colormap
+
 from scipy import optimize
 #from arff import arffread
 
@@ -37,7 +39,11 @@ def RZBest(trainData) :
 ############################## Plotting #########################################
 def PlotCorr(obs, estimated, **kwargs) :
     pylab.plot([0.0, obs.max()], [0.0, obs.max()], color='gray', linewidth=2.5)
-    pylab.scatter(obs.flatten(), estimated.flatten(), s=1.5, linewidths=0, c='black', alpha=0.75, hold=True, **kwargs)
+    obsBins = MakeBins(obs.flatten(), OptimalBinSize(obs.flatten()))
+    estBins = MakeBins(estimated.flatten(), OptimalBinSize(estimated.flatten()))
+    (densVals, locs) = Hist2d(obs.flatten(), obsBins, estimated.flatten(), estBins)
+    pylab.pcolor(obsBins, estBins, densVals, cmap=matplotlib.cm.get_cmap('Greys'))
+#    pylab.scatter(obs.flatten(), estimated.flatten(), s=1.5, linewidths=0, c='black', alpha=0.75, hold=True, **kwargs)
     pylab.xlabel('Observed Rainfall Rate [mm/hr]')
     pylab.ylabel('Estimated Rainfall Rate [mm/hr]')
     pylab.xlim((0.0, obs.max()))
