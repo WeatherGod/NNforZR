@@ -1,0 +1,38 @@
+
+StatLoad <- function(dirLoc, statName, subProjs) {
+    return(lapply(paste(dirLoc, 'summary_', statName, '_', subProjs, '.txt', sep=''), scan))
+}
+
+
+
+ProjectAnalyze <- function(dirLoc, statName, subProjs, titleName, compareToIndex) {
+    statInfo <- StatLoad(dirLoc, statName, subProjs)
+    boxplot(statInfo, names=subProjs, main=paste('Model ', titleName), xlab='Models')
+    tempStatInfo <- matrix(unlist(statInfo), ncol=length(subProjs))
+    statInfo.boot <- bootstrap(tempStatInfo, colMeans, B=1000)
+
+    print(limits.bca(statInfo.boot, prob=c(0.05)))
+    print(statInfo.boot$estimate$Mean)
+    print(limits.bca(statInfo.boot, prob=c(0.95)))
+
+    setB <- tempStatInfo[,compareToIndex]
+    pVals <- numeric(length=length(subProjs))
+    indices <- 1:length(subProjs)
+    for (index in indices[-compareToIndex]) {
+        setA <- tempStatInfo[,index]
+        tempHold <- permutationTest2(data = setA, statistic = mean, data2 = setB)
+	pVals[index] <- tempHold$estimate$p.value
+    }
+
+    return(pVals)
+}
+
+
+
+
+
+
+
+
+
+
