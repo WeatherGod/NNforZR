@@ -7,6 +7,7 @@ import numpy
 import scipy.stats as ss	# for sem() and other stat funcs
 import scipy.stats.stats as sss	# for nanmean() and other nan-friendly funcs
 import pylab			# for plotting
+import matplotlib		# for colormaps
 
 from filtertraining import *	# for MakeBins(), Hist2d()
 
@@ -33,7 +34,8 @@ def decimate2d_ZR(vals1, vals2, decimation):
 #     Plotting 
 #################################################################################
 def PlotCorr(obs, estimated, **kwargs) :
-    pylab.scatter(obs.flatten(), estimated.flatten(), s=1, **kwargs)
+#    pylab.scatter(obs.flatten(), estimated.flatten(), s=1, **kwargs)
+    pylab.hexbin(obs.flatten(), estimated.flatten(), bins='log', cmap=matplotlib.cm.gray_r, **kwargs)
     pylab.plot([0.0, obs.max()], [0.0, obs.max()], color='gray', hold=True, linewidth=2.5)
     pylab.xlabel('Observed Rainfall Rate [mm/hr]')
     pylab.ylabel('Estimated Rainfall Rate [mm/hr]')
@@ -83,7 +85,8 @@ def AnalyzeResultInfo(modelPredicts, testObs, reflectObs) :
 def DoSummaryInfo(obs, estimated) :
     return({'rmse': numpy.sqrt(sss.nanmean((estimated - obs) ** 2.0, axis = 1)),
             'mae': sss.nanmean(numpy.abs(estimated - obs), axis=1),
-	    'corr': numpy.diag(numpy.corrcoef(estimated, obs), k=estimated.shape[0])})
+	    'corr': numpy.diag(numpy.corrcoef(estimated, obs), k=estimated.shape[0]),
+	    'bias': numpy.mean(estimated - obs, axis=1)})
 
 
 ###############################################################################
@@ -136,11 +139,11 @@ def SaveSummaryInfo(resultInfo, dirLoc, subProj) :
     """
     resultsList = glob.glob(os.sep.join([dirLoc, subProj, 'results_*.csv']))
     resultsList.sort()
-    """
+    
     summaryInfo = {'rmse': [],
 		   'mae': [],
 		   'corr': []}
-    """
+    
     skipMap = {'FullSet': 13,
 	       'SansWind': 11,
 	       'JustWind': 10,
@@ -175,7 +178,7 @@ def SaveSummaryInfo(resultInfo, dirLoc, subProj) :
     statNames = summaryInfo.keys()
     for statname in statNames :
         numpy.savetxt(os.sep.join([dirLoc, "summary_%s_%s.txt" % (statname, subProj)]), summaryInfo[statname])
-        print "        Saved summary data for", statname
+        print "        Saved summary data for", statname, " Mean: ", numpy.mean(summaryInfo[statname]), "  StdDev: ", numpy.std(summaryInfo[statname])
 
 
 def SaveSubprojectModel(dirLoc, subProj) :

@@ -34,7 +34,7 @@ if __name__ == '__main__':
         resultInfo = ObtainResultInfo(os.sep.join([options.dataDir, options.projectName]), model)
 
         ####### Plot Corr ##########
-        PlotCorr(resultInfo['testObs'], resultInfo['modelPredicts'], c='black')
+        PlotCorr(resultInfo['testObs'], resultInfo['modelPredicts'])
         pylab.title('Model/Obs Correlation Plot - Model: %s' % model, fontsize = 12)
 
         #pylab.savefig(os.sep.join([destDir, "Corr%s_Raw.eps" % model]))

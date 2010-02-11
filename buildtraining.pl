@@ -70,7 +70,7 @@ my %lastGrid = (
 
 
 # now open the training file for writing.
-#open(TRAINSTREAM, ">>trainingData_retry.csv");
+open(TRAINSTREAM, ">>trainingData_full.csv");
 
 print STDERR "Processing radar files:\n";
 # Now process each radar file
@@ -81,8 +81,8 @@ foreach my $radarFile (@ARGV)
 	# Need to get radar time for this file
 	my $radarTime = GetRadarTime($radarFile);
 
-        my $trainingFile = sprintf("trainingDir/%s_%s.csv", $radarTime->ymd(), $radarTime->hms());
-        open(TRAINSTREAM, ">$trainingFile");
+#        my $trainingFile = sprintf("trainingDir/%s_%s.csv", $radarTime->ymd(), $radarTime->hms());
+#        open(TRAINSTREAM, ">$trainingFile");
 
 	if (!defined($radarTime))
 	{
@@ -90,8 +90,8 @@ foreach my $radarFile (@ARGV)
 		next;
 	}
 
-	my $yearFraction = sprintf("%.4f", ($radarTime->day_of_year() + (($radarTime->hour()*60 + $radarTime->minute()) / (24*60)))
-						 / ($radarTime->is_leap_year() ? 366 : 365));
+	my $yearFraction = ($radarTime->day_of_year() + (($radarTime->hour()*60 + $radarTime->minute()) / (24*60)))
+						 / ($radarTime->is_leap_year() ? 366 : 365);
 
 	print STDERR "Getting reflectivities...\n";
 	my %stationReflects = GetReflectivities($radarFile, %statLocs, %lastGrid);
@@ -144,15 +144,15 @@ foreach my $radarFile (@ARGV)
 		my $vwnd = sprintf("%.4f", $stationData->{'vwnd'}); # if ($stationData->{'wvec'} ne 'nan'
 		
 
-		print TRAINSTREAM "$tair,$relh,$press,$uwnd,$vwnd,$reflect,$rain\n";
+		print TRAINSTREAM "$tair,$relh,$press,$uwnd,$vwnd,$reflect,$rain,$yearFraction\n";
 	}
 
-        close(TRAINSTREAM);
+#        close(TRAINSTREAM);
 }
 
 
 # finished!  close the training file.
-#close(TRAINSTREAM);
+close(TRAINSTREAM);
 
 exit(0);
 
