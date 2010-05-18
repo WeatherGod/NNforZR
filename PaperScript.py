@@ -3,7 +3,7 @@
 import glob			# for filename globbing
 import os			# for os.sep
 
-import pylab
+import matplotlib.pyplot as pyplot
 
 from ProjectUtils import ObtainResultInfo, PlotCorr, PlotZR
 
@@ -20,6 +20,8 @@ if __name__ == '__main__':
 		      help="Data exists at SRC", metavar="SRC", default=".")
     parser.add_option("-m", "--models", dest="models", action="append", type="string",
 		      help="Create images for MODEL", metavar="MODEL")
+    parser.add_option("-f", "--format", dest="outputFormat", type="string",
+		      help="Desired FORMAT for the output images", metavar="FORMAT", default="png")
 
     (options, args) = parser.parse_args()
     destDir = '.'
@@ -27,27 +29,42 @@ if __name__ == '__main__':
     if options.projectName is None : parser.error("Missing PROJECT!")
     if len(options.models) == 0 : print "WARNING: No models given!"
 
-    pylab.figure()
+    corrFig = pyplot.figure(figsize=(12.5, 5))
+    zrFig = pyplot.figure(figsize=(12.5, 5))
 
-    for model in options.models :
+    for index, model in enumerate(options.models) :
         print "Model: ", model
         resultInfo = ObtainResultInfo(os.sep.join([options.dataDir, options.projectName]), model)
 
         ####### Plot Corr ##########
-        PlotCorr(resultInfo['testObs'], resultInfo['modelPredicts'])
-        pylab.title('Model/Obs Correlation Plot - Model: %s' % model, fontsize = 12)
+	print "Plotting Corr"
+	corrAx = corrFig.add_subplot(1, len(options.models), index + 1)
+        PlotCorr(resultInfo['testObs'], resultInfo['modelPredicts'], axis=corrAx)
+        corrAx.set_title('Model/Obs Correlation Plot - Model: %s' % model, fontsize = 'large')
 
+	#print "Saving..."
         #pylab.savefig(os.sep.join([destDir, "Corr%s_Raw.eps" % model]))
-        pylab.savefig(os.sep.join([destDir, "Corr%s_Raw.png"  % model]), dpi = 400)
-        pylab.clf()
+        #pylab.savefig("%s%sCorr%s_Raw.%s"  % (destDir, os.sep, model, options.outputFormat), 
+	#	      transparent=True, bbox_inches='tight')
+
+        #pylab.clf()
 
 
         ####### Plot ZR ###########
-        PlotZR(resultInfo['reflectObs'], resultInfo['testObs'], resultInfo['modelPredicts'])
-        pylab.title('Model Comparison - Z-R Plane - Model: %s' % model, fontsize = 12)
+	print "Plotting ZR"
+	zrAx = zrFig.add_subplot(1, len(options.models), index + 1)
+        PlotZR(resultInfo['reflectObs'], resultInfo['testObs'], resultInfo['modelPredicts'], axis=zrAx)
+        zrAx.set_title('Model Comparison - Z-R Plane - Model: %s' % model, fontsize = 'large')
 
-        #pylab.savefig(os.sep.join([destDir, "ZRPlot_%s_Raw.eps" % model]))
-        pylab.savefig(os.sep.join([destDir, "ZRPlot_%s_Raw.png" % model]), dpi = 400)
-        pylab.clf()
- 
+	#print "Saving..."
+        #pylab.savefig("%s%sZRPlot_%s_Raw.%s" % (destDir, os.sep, model, options.outputFormat),
+	#	      transparent=True, bbox_inches='tight')
+        #pylab.clf()
+
+    print "Saving Corr..."
+    corrFig.savefig("%s%sCorrModels.%s" % (destDir, os.sep, options.outputFormat),
+		    transparent=True, bbox_inches='tight')
+    print "Saving ZRPlot..."
+    zrFig.savefig("%s%sZRPlot_Models.%s" % (destDir, os.sep, options.outputFormat),
+		  transparent=True, bbox_inches='tight')
 

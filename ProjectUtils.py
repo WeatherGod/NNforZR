@@ -33,22 +33,50 @@ def decimate2d_ZR(vals1, vals2, decimation):
 #################################################################################
 #     Plotting 
 #################################################################################
-def PlotCorr(obs, estimated, **kwargs) :
-#    pylab.scatter(obs.flatten(), estimated.flatten(), s=1, **kwargs)
-    pylab.hexbin(obs.flatten(), estimated.flatten(), bins='log', cmap=matplotlib.cm.gray_r, **kwargs)
-    pylab.plot([0.0, obs.max()], [0.0, obs.max()], color='gray', hold=True, linewidth=2.5)
-    pylab.xlabel('Observed Rainfall Rate [mm/hr]')
-    pylab.ylabel('Estimated Rainfall Rate [mm/hr]')
-    pylab.xlim((0.0, obs.max()))
-    pylab.ylim((0.0, obs.max()))
+def PlotCorr(obs, estimated, axis=None, **kwargs) :
+    if axis is None :
+        axis = pylab.gca()
 
-def PlotZR(reflects, obs, estimated, **kwargs) :
-    pylab.scatter(reflects.flatten(), obs.flatten(), s = 3.0, linewidths = 0, c='grey')
-    pylab.scatter(reflects.flatten(), estimated.flatten(), c='black', s = 0.3, linewidths=0, hold = True, **kwargs)
-    pylab.xlabel('Reflectivity [dBZ]')
-    pylab.ylabel('Rainfall Rate [mm/hr]')
-    pylab.xlim((reflects.min(), reflects.max()))
-    pylab.ylim((obs.min(), obs.max()))
+    obs = obs.flatten()
+    estimated = estimated.flatten()
+#    pylab.scatter(obs, estimated, s=1, **kwargs)
+    axis.hexbin(obs, estimated, bins='log', cmap=matplotlib.cm.gray_r, **kwargs)
+    axis.plot([0.0, obs.max()], [0.0, obs.max()], color='gray', linewidth=2.5)
+    axis.set_xlabel('Observed Rainfall Rate [mm/hr]', fontsize='large')
+    axis.set_ylabel('Estimated Rainfall Rate [mm/hr]', fontsize='large')
+    axis.set_xlim((0.0, obs.max()))
+    axis.set_ylim((0.0, obs.max()))
+
+def PlotZR(reflects, obs, estimated, axis=None, **kwargs) :
+    if axis is None :
+        axis = pylab.gca()
+
+    theScale = 1
+
+    # Doing some data 'reduction'...
+    #   Starting with precision reduction
+    reflects = reflects.round(theScale).flatten()
+    obs = obs.round(theScale).flatten()
+    estimated = estimated.round(theScale).flatten()
+
+    print "Orig Len:", len(obs)
+
+    # Now, we feed the data pairs through set() to get unique pairs,
+    #    then rezip that data so that it can be passed as positional arguements
+    #    into scatter
+    obsZR = zip(*set(zip(reflects, obs)))
+    modZR = zip(*set(zip(reflects, estimated)))
+
+    print "truncated obs len:", len(obsZR[0]), "   truncated models len:", len(modZR[0])
+
+    axis.scatter(*obsZR, s = 3.0, linewidths = 0, c='grey')
+    axis.scatter(*modZR, c='black', s = 0.3, linewidths=0, **kwargs)
+    #pylab.hexbin(reflects, obs, bins='log', cmap=matplotlib.cm.gray_r, **kwargs)
+    #pylab.hexbin(reflects, estimated, bins='log', cmap=matplotlib.cm.gray_r, **kwargs)
+    axis.set_xlabel('Reflectivity [dBZ]', fontsize='large')
+    axis.set_ylabel('Rainfall Rate [mm/hr]', fontsize='large')
+    axis.set_xlim((reflects.min(), reflects.max()))
+    axis.set_ylim((obs.min(), obs.max()))
 
 ####################################################################################
 #      Project Analysis
