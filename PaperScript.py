@@ -66,5 +66,5 @@ if __name__ == '__main__':
 		    transparent=True, bbox_inches='tight')
     print "Saving ZRPlot..."
     zrFig.savefig("%s%sZRPlot_Models.%s" % (destDir, os.sep, options.outputFormat),
-		  transparent=True, bbox_inches='tight')
+		  transparent=False, bbox_inches='tight')
 

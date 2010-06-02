@@ -69,10 +69,8 @@ def PlotZR(reflects, obs, estimated, axis=None, **kwargs) :
 
     print "truncated obs len:", len(obsZR[0]), "   truncated models len:", len(modZR[0])
 
-    axis.scatter(*obsZR, s = 3.0, linewidths = 0, c='grey')
-    axis.scatter(*modZR, c='black', s = 0.3, linewidths=0, **kwargs)
-    #pylab.hexbin(reflects, obs, bins='log', cmap=matplotlib.cm.gray_r, **kwargs)
-    #pylab.hexbin(reflects, estimated, bins='log', cmap=matplotlib.cm.gray_r, **kwargs)
+    axis.scatter(*obsZR, s = 3.0, linewidths = 0, c='grey', rasterized=True)
+    axis.scatter(*modZR, c='black', s = 0.3, linewidths=0, rasterized=True, **kwargs)
     axis.set_xlabel('Reflectivity [dBZ]', fontsize='large')
     axis.set_ylabel('Rainfall Rate [mm/hr]', fontsize='large')
     axis.set_xlim((reflects.min(), reflects.max()))
