@@ -19,7 +19,7 @@ if __name__ == '__main__':
     parser.add_option("-d", "--dir", dest="dataDir", type="string",
 		      help="Data exists at SRC", metavar="SRC", default=".")
     parser.add_option("-m", "--models", dest="models", action="append", type="string",
-		      help="Create images for MODEL", metavar="MODEL")
+		      help="Create images for MODEL", metavar="MODEL", default=[])
     parser.add_option("-f", "--format", dest="outputFormat", type="string",
 		      help="Desired FORMAT for the output images", metavar="FORMAT", default="png")
 
@@ -37,7 +37,7 @@ if __name__ == '__main__':
         resultInfo = ObtainResultInfo(os.sep.join([options.dataDir, options.projectName]), model)
 
         ####### Plot Corr ##########
-	print "Plotting Corr"
+        print "Plotting Corr"
 	corrAx = corrFig.add_subplot(1, len(options.models), index + 1)
         PlotCorr(resultInfo['testObs'], resultInfo['modelPredicts'], axis=corrAx)
         corrAx.set_title('Model/Obs Correlation Plot - Model: %s' % model, fontsize = 'large')
@@ -45,10 +45,10 @@ if __name__ == '__main__':
 	#print "Saving..."
         #pylab.savefig(os.sep.join([destDir, "Corr%s_Raw.eps" % model]))
         #pylab.savefig("%s%sCorr%s_Raw.%s"  % (destDir, os.sep, model, options.outputFormat), 
-	#	      transparent=True, bbox_inches='tight')
+	#	       bbox_inches='tight')
 
         #pylab.clf()
-
+        
 
         ####### Plot ZR ###########
 	print "Plotting ZR"
@@ -63,7 +63,7 @@ if __name__ == '__main__':
 
     print "Saving Corr..."
     corrFig.savefig("%s%sCorrModels.%s" % (destDir, os.sep, options.outputFormat),
-		    transparent=True, bbox_inches='tight')
+    		    transparent=False, bbox_inches='tight')
     print "Saving ZRPlot..."
     zrFig.savefig("%s%sZRPlot_Models.%s" % (destDir, os.sep, options.outputFormat),
 		  transparent=False, bbox_inches='tight')
